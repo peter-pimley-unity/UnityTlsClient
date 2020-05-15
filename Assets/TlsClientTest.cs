@@ -8,9 +8,13 @@ using System;
 using System.Net.Sockets;
 using System.Net.Security;
 using System.Linq;
+using UnityEngine.UI;
 
 public class TlsClientTest : MonoBehaviour
 {
+
+	[SerializeField]
+	private Text m_text;
 
 	class State
 	{
@@ -41,18 +45,21 @@ public class TlsClientTest : MonoBehaviour
 	// Start is called before the first frame update
 	IEnumerator Start()
 	{
-		State s = new State();
-		ThreadPool.QueueUserWorkItem (DoClient, s);
-		while (!s.done)
+		m_text.text = "Working...";
+		State state = new State();
+		string content = null;
+		ThreadPool.QueueUserWorkItem (DoClient, state);
+		while (!state.done)
 			yield return null;
-		if (s.failure == null)
-			Debug.Log("Succeeded: {s.text}");
+		if (state.failure == null)
+			content = $"Succeeded: {state.text}";
 		else
 		{
-			IEnumerable<Exception> exceptions = ExpandException(s.failure);
+			IEnumerable<Exception> exceptions = ExpandException(state.failure);
 			string combined = string.Join("\n", exceptions.Select(x => $"{x.GetType()}: {x.Message}\n").ToArray());
-			Debug.Log($"Encountered Exceptions: {combined}");
+			content = $"Encountered Exceptions: {combined}";
 		}
+		m_text.text = content;
 	}
 
 
@@ -61,7 +68,7 @@ public class TlsClientTest : MonoBehaviour
 		State state = (State)o;
 		try
 		{
-			string host = "self-signed.badssl.com";
+			string host = "sha512.badssl.com";
 			var client = new TcpClient(host, 443);
 			SslStream ssl = new SslStream(client.GetStream());
 			ssl.AuthenticateAsClient(host);
